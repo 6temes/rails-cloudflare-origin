@@ -1,0 +1,13 @@
+/.bundle/
+/coverage/
+/doc/
+/pkg/
+/tmp/
+/test/dummy/log/
+/test/dummy/tmp/
+/vendor/bundle/
+*.gem
+*.rbc
+Gemfile.lock
+.ruby-lsp/
+.claude/
