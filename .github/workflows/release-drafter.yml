@@ -1,0 +1,28 @@
+name: Release Drafter
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  update-release-draft:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The draft's tag must be `v` plus the gem's version: release.yml's `rake release` finds that
+      # tag and publishes, where any other tag makes it try to push its own and fail.
+      - name: Read the gem version
+        id: version
+        run: echo "version=$(ruby -e 'require "./lib/cloudflare_origin/version"; print CloudflareOrigin::VERSION')" >> "$GITHUB_OUTPUT"
+
+      - uses: release-drafter/release-drafter@978bb0b30c5ee8cdd332ced253758157150d43f0 # v7.10.0
+        with:
+          version: ${{ steps.version.outputs.version }}
