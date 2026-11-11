@@ -3,7 +3,8 @@ require_relative "lib/cloudflare_origin/version"
 Gem::Specification.new do |spec|
   spec.name = "rails-cloudflare-origin"
   spec.version = CloudflareOrigin::VERSION
-  spec.authors = ["Kokorono"]
+  spec.authors = ["Daniel López Prat"]
+  spec.email = ["daniel@6temes.cat"]
   spec.summary = "Refuse requests that bypass Cloudflare and take the client IP from CF-Connecting-IP"
   spec.description = "A Rack middleware, installed by a Railtie at the top of the stack, that requires a " \
                      "Cloudflare-added origin secret, strips client IP headers a visitor can forge, and " \
