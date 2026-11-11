@@ -12,7 +12,7 @@ The gem must read as a generic library for any Rails app behind Cloudflare. Noth
 - **People and customers:** names, emails, customer or employee data, or business details.
 - **Local machine details:** absolute paths from a developer's checkout, usernames, or machine names.
 
-Naming a private `kokorono-group` repository is fine; quoting or summarizing its contents is not. When a change was motivated by an internal incident, describe the general problem the gem solves ("a forged `Forwarded` header made Rails raise"), never the internal system where it happened.
+Naming a private repository is fine; quoting or summarizing its contents is not. When a change was motivated by an internal incident, describe the general problem the gem solves ("a forged `Forwarded` header made Rails raise"), never the internal system where it happened.
 
 Do not name the third-party services the company uses (its hosting platform, error tracker or other vendors) in code, comments or docs: describe the role instead ("a proxy server in front of the app", "an error tracker").
 
