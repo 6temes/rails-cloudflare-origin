@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.description = "A Rack middleware, installed by a Railtie at the top of the stack, that requires a " \
                      "Cloudflare-added origin secret, strips client IP headers a visitor can forge, and " \
                      "sets the client IP from CF-Connecting-IP."
-  spec.homepage = "https://github.com/kokorono-group/rails-cloudflare-origin"
+  spec.homepage = "https://github.com/6temes/rails-cloudflare-origin"
   spec.license = "MIT"
 
   spec.required_ruby_version = ">= 4.0"
