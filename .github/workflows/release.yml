@@ -52,22 +52,4 @@ jobs:
         with:
           ruby-version: .ruby-version
           bundler-cache: true
-      # RubyGems rejects the first trusted-publishing push of a new gem unless the
-      # token exchange names the account that registered the pending publisher,
-      # and release-gem cannot pass that owner yet, so this step does the same
-      # exchange with it. Pushes to an existing gem accept the owner and ignore it.
-      - name: Exchange the OIDC token for a RubyGems key
-        env:
-          OWNER: ${{ vars.RUBYGEMS_OWNER_ID }}
-        run: |
-          jwt=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=rubygems.org" | jq -er .value)
-          body=$(jq -n --arg jwt "$jwt" --arg owner "$OWNER" \
-            '{jwt: $jwt} + (if $owner == "" then {} else {owner: $owner} end)')
-          key=$(curl -sSf -X POST -H 'content-type: application/json' -H 'accept: application/json' \
-            -d "$body" https://rubygems.org/api/v1/oidc/trusted_publisher/exchange_token | jq -er .rubygems_api_key)
-          echo "::add-mask::$key"
-          echo "GEM_HOST_API_KEY=$key" >> "$GITHUB_ENV"
       - uses: rubygems/release-gem@7f9650160c1a4e7989fdc9855807bdbd421d8b6b # v1.4.1
-        with:
-          setup-trusted-publisher: 'false'
