@@ -1,3 +1,4 @@
 module CloudflareOrigin
-  VERSION = "0.1.2".freeze
+  # Release builds stamp the tag's version over this placeholder.
+  VERSION = "0.0.1.dev"
 end

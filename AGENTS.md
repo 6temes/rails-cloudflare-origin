@@ -40,11 +40,20 @@ Minitest, run with `bundle exec rake test`. `Rack::MockRequest.env_for` sets no 
 
 ## Releasing
 
-1. Bump `CloudflareOrigin::VERSION` in a pull request and merge it.
-2. On every push to `main`, `release-drafter.yml` updates a draft GitHub release named and tagged `v` plus that version, with notes from the merged pull requests (Dependabot bumps collapsed into one line per dependency or group).
-3. Publish the draft. That creates the `v<version>` tag, and the tag push runs `release.yml`, which runs lint and tests and then publishes to RubyGems through trusted publishing in the `release` environment.
+Publishing the release draft is the whole release: there is no version-bump commit, no local step and no API key.
 
-Tagging by hand also works; publish the drafted notes for that tag afterwards so the releases page stays complete.
+1. Every push to `main` updates a draft GitHub release from the merged pull request titles. Its version bumps the highest published release: a pull request labelled `major` or `minor` bumps that part, and any other pull request bumps the patch.
+2. Publish the draft. Its `vX.Y.Z` tag runs `release.yml`, which runs `ci.yml` on the tagged commit and, only if that passes, stamps the version into `lib/cloudflare_origin/version.rb` with `bin/stamp-version`, builds the gem and pushes it through RubyGems trusted publishing in the `release` environment.
+
+`lib/cloudflare_origin/version.rb` holds the placeholder `0.0.1.dev` and is never bumped by hand.
+
+Release Drafter skips prereleases: drafts are never prereleases, and a published prerelease is ignored when it picks the release to bump from.
+
+The trusted publisher on rubygems.org must name workflow `release.yml` and environment `release`; a blank environment field accepts any environment.
+
+### Recovering from a failed publish
+
+Release tags are never moved or deleted. If the `Release` run fails, in `ci` or in `publish`, fix the cause and re-run its failed jobs on the same tag. If that tag cannot be released, because the tagged commit is broken or the run is too old to re-run, leave its tag and release in place and ship the fix as the next version. Before publishing that next draft, regenerate its notes by running the `Release Drafter` workflow on `main` from the Actions tab, and add back any changes the failed release never shipped.
 
 ## Gemfile
 
