@@ -1,4 +1,4 @@
-name: ci
+name: CI
 
 # Bare `push`: a pull_request trigger stops running entirely once GitHub marks
 # a PR CONFLICTING, and carrying both would double-run every PR.
@@ -6,9 +6,12 @@ name: ci
 # pushes, and release tags have their own workflow. `tags-ignore` is NOT the
 # alternative -- with no branch filter present GitHub runs the workflow on no
 # branch push at all.
+# `workflow_call` fires on nothing by itself: release.yml calls it so the tagged
+# commit runs this exact CI before anything is published.
 on:
   push:
     branches: ['**']
+  workflow_call:
 
 # Guarded rather than a plain `true`: a default-branch run is the one that
 # establishes whether main is green.

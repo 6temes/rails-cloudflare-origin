@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+# Writes a release version into version.rb before the gem is built.
+#
+#   bin/stamp-version VERSION FILE
+
+abort "usage: bin/stamp-version VERSION FILE" unless ARGV.size == 2
+version, path = ARGV
+
+# A version that Gem::Version rewrites (`1.2.3-rc1` becomes `1.2.3.pre.rc1`)
+# would build a gem file named differently from the tag, so it is refused here.
+unless Gem::Version.correct?(version) && Gem::Version.new(version).to_s == version
+  abort "#{version.inspect} is not a plain gem version"
+end
+
+literal = /^(\s*VERSION = )"[^"]*"/
+source = File.read(path)
+abort "expected exactly one VERSION literal in #{path}" unless source.scan(literal).size == 1
+
+File.write(path, source.sub(literal) { "#{$1}\"#{version}\"" })

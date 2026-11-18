@@ -40,11 +40,12 @@ Minitest, run with `bundle exec rake test`. `Rack::MockRequest.env_for` sets no 
 
 ## Releasing
 
-1. Bump `CloudflareOrigin::VERSION` in a pull request and merge it.
-2. On every push to `main`, `release-drafter.yml` updates a draft GitHub release named and tagged `v` plus that version, with notes from the merged pull requests (Dependabot bumps collapsed into one line per dependency or group).
-3. Publish the draft. That creates the `v<version>` tag, and the tag push runs `release.yml`, which runs lint and tests and then publishes to RubyGems through trusted publishing in the `release` environment.
+The release tag is the only source of the version. `lib/cloudflare_origin/version.rb` holds the placeholder `0.0.0.dev`; never bump it by hand.
 
-Tagging by hand also works; publish the drafted notes for that tag afterwards so the releases page stays complete.
+1. On every push to `main`, `release-drafter.yml` updates a draft GitHub release, tagged one patch above the last release, with notes from the merged pull requests.
+2. Publish the draft. The `v<version>` tag push runs `release.yml`: it runs `ci.yml` on the tagged commit, then the `publish` job, in the `release` environment, stamps the version into `version.rb` with `bin/stamp-version`, builds the gem and pushes it through RubyGems trusted publishing.
+
+The RubyGems trusted publisher must stay on workflow `release.yml` and environment `release`; a blank environment field accepts any environment. The shape of this workflow is owned by the gem release section of `docs/ci-standard.md` in 6temes/claude-plugins.
 
 ## Gemfile
 
