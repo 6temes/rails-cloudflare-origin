@@ -40,14 +40,20 @@ Minitest, run with `bundle exec rake test`. `Rack::MockRequest.env_for` sets no 
 
 ## Releasing
 
-The release tag is the only source of the version. `lib/cloudflare_origin/version.rb` holds the placeholder `0.0.1.dev`; never bump it by hand.
+Publishing the release draft is the whole release: there is no version-bump commit, no local step and no API key.
 
-1. On every push to `main`, `release-drafter.yml` updates a draft GitHub release with notes from the merged pull requests. Its version bumps the last published release, skipping prereleases: major if a merged pull request carries the `major` label, otherwise minor for `minor`, otherwise patch.
-2. Publish the draft. The `v<version>` tag push runs `release.yml`: it runs `ci.yml` on the tagged commit, then the `publish` job, in the `release` environment, stamps the version into `version.rb` with `bin/stamp-version`, builds the gem and pushes it through RubyGems trusted publishing.
+1. Every push to `main` updates a draft GitHub release from the merged pull request titles. Its version bumps the last published release: a pull request labelled `major` or `minor` bumps that part, and any other pull request bumps the patch.
+2. Publish the draft. Its `vX.Y.Z` tag runs `release.yml`, which runs `ci.yml` on the tagged commit and, only if that passes, stamps the version into `lib/cloudflare_origin/version.rb` with `bin/stamp-version`, builds the gem and pushes it through RubyGems trusted publishing in the `release` environment.
 
-If the publish fails, never move or delete the release tag. Fix the cause on `main`, regenerate the next draft's notes, and publish that draft as the next version.
+`lib/cloudflare_origin/version.rb` holds the placeholder `0.0.1.dev` and is never bumped by hand.
 
-The RubyGems trusted publisher must stay on workflow `release.yml` and environment `release`; a blank environment field accepts any environment. The shape of this workflow is owned by the gem release section of `docs/ci-standard.md` in 6temes/claude-plugins.
+Release Drafter skips prereleases: drafts are never prereleases, and a published prerelease is ignored when it picks the release to bump from.
+
+The trusted publisher on rubygems.org must name workflow `release.yml` and environment `release`; a blank environment field accepts any environment. The release shape is described in the [Gem release section of the CI standard](https://github.com/6temes/claude-plugins/blob/main/docs/ci-standard.md#gem-release).
+
+### Recovering from a failed publish
+
+Release tags are never moved or deleted. Fix the cause and re-run the failed `publish` job on the same tag. If that tag cannot be released, because the tagged commit is broken or the run is too old to re-run, leave its tag and release in place and ship the fix as the next version. Before publishing that next draft, regenerate its notes by re-running the latest `Release Drafter` run on `main`, and add back any changes the failed release never shipped.
 
 ## Gemfile
 

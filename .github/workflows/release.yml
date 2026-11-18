@@ -1,10 +1,11 @@
 name: Release
 
-# Publishes through RubyGems trusted publishing, so no API key is stored in
-# this repository. The `release` environment admits only `v*` tags.
+# Publishes through RubyGems trusted publishing. The rubygems.org publisher
+# matches this file's name and the `release` environment, which admits only
+# `v*` tags: renaming either breaks publishing until the publisher is updated.
 #
-# No `concurrency`: a publish must never be cancelled mid-flight, and a group
-# equal to the called CI's own would make that CI cancel this run.
+# No concurrency group: a publish must never be cancelled mid-flight, and a
+# group equal to the one ci.yml declares would make the called CI cancel this run.
 on:
   push:
     tags: ['v*']
@@ -13,9 +14,8 @@ permissions:
   contents: read
 
 jobs:
-  # CI skips tag pushes, so this is the only run of lint and tests on the
-  # tagged commit. It holds no id-token, so a compromised development gem
-  # cannot mint a publishing token.
+  # CI skips tag pushes, so this is the only run of CI on the tagged commit. It
+  # holds no id-token, so no development gem it installs can mint a publishing token.
   ci:
     uses: ./.github/workflows/ci.yml
 
@@ -25,26 +25,34 @@ jobs:
     timeout-minutes: 10
     environment: release
     permissions:
-      # Exchanged for a short-lived RubyGems token.
-      id-token: write
       contents: read
+      id-token: write
+
+    # rubygems/release-gem is unusable here: it runs `rake release`, which
+    # refuses the tree the stamp leaves dirty.
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # No bundle is installed, so no development gem runs in the job that
-      # can publish.
+
+      # No bundle: `gem build` needs only the gemspec, so no third-party gem
+      # runs in the job that can publish.
       - name: Set up Ruby
         uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: .ruby-version
           bundler: none
+
       - name: Stamp the tag version into version.rb
         run: bin/stamp-version "${GITHUB_REF_NAME#v}" lib/cloudflare_origin/version.rb
+
       - name: Build gem
         run: gem build rails-cloudflare-origin.gemspec
+
       - name: Configure RubyGems credentials
         uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
-      # Named for the tag, so a build whose version differs pushes nothing.
+
+      # Pushing the file named for the tag means a build whose version differs
+      # from the tag has nothing to push.
       - name: Push gem
         run: gem push "rails-cloudflare-origin-${GITHUB_REF_NAME#v}.gem"

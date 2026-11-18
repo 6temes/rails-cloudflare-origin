@@ -1,22 +1,23 @@
 require "test_helper"
-require "fileutils"
 require "open3"
 require "tmpdir"
 
 class StampVersionTest < ActiveSupport::TestCase
   ROOT = File.expand_path("..", __dir__)
-  STAMP = File.join(ROOT, "bin/stamp-version")
+  SCRIPT = File.join(ROOT, "bin/stamp-version")
   VERSION_FILE = File.join(ROOT, "lib/cloudflare_origin/version.rb")
 
   setup do
     @dir = Dir.mktmpdir
-    @target = File.join(@dir, "version.rb")
-    FileUtils.cp VERSION_FILE, @target
+    @path = File.join(@dir, "version.rb")
+    FileUtils.cp VERSION_FILE, @path
   end
 
-  teardown { FileUtils.remove_entry @dir }
+  teardown do
+    FileUtils.remove_entry @dir
+  end
 
-  test "the unreleased placeholder satisfies the >= 0 requirement Bundler gives a git source" do
+  test "the placeholder satisfies the >= 0 requirement Bundler gives a git source" do
     assert_operator Gem::Version.new(CloudflareOrigin::VERSION), :>=, Gem::Version.new("0")
   end
 
@@ -27,56 +28,56 @@ class StampVersionTest < ActiveSupport::TestCase
     assert_equal "1.2.3", loaded_version
   end
 
-  test "refuses a version that is not a plain gem version, leaving the file unchanged" do
-    original = File.read(@target)
+  test "rejects a version that is not canonical, leaving the file unchanged" do
+    original = File.read(@path)
 
     ["abc", "", "1.2.3-rc1"].each do |version|
       stderr, status = stamp version
 
       assert_not status.success?, "accepted #{version.inspect}"
-      assert_match "is not a plain gem version", stderr
-      assert_equal original, File.read(@target)
+      assert_match "is not a canonical gem version", stderr
+      assert_equal original, File.read(@path)
     end
   end
 
-  test "refuses a file without a VERSION literal, leaving it unchanged" do
-    File.write @target, "module CloudflareOrigin\nend\n"
+  test "rejects a file without a VERSION literal, leaving it unchanged" do
+    File.write @path, "module Foo\nend\n"
 
     stderr, status = stamp "1.2.3"
 
     assert_not status.success?
-    assert_match "exactly one VERSION literal", stderr
-    assert_equal "module CloudflareOrigin\nend\n", File.read(@target)
+    assert_match "expected one VERSION literal", stderr
+    assert_equal "module Foo\nend\n", File.read(@path)
   end
 
-  test "refuses a placeholder followed by a second VERSION assignment, leaving the file unchanged" do
-    placeholder = File.read(@target).chomp.delete_suffix("end")
+  test "rejects a file that does not load as the stamped version, leaving it unchanged" do
     [
-      %(#{placeholder}=begin\n  VERSION = "9.9.9"\n=end\nend\n),
-      %(#{placeholder}  VERSION = "9.9.9" # release version\nend\n),
-      %(#{placeholder}  VERSION = VERSION + ".1"\nend\n)
-    ].each do |source|
-      File.binwrite @target, source
+      ->(placeholder) { "=begin\n#{placeholder}=end\n" },
+      ->(placeholder) { "#{placeholder}VERSION = \"9.9.9\" # release version\n" },
+      # Prints the tag's head first, so a check that read the child's output would pass.
+      ->(placeholder) { "#{placeholder}print \"1.\"\nVERSION = \"2.3\".freeze\n" }
+    ].each do |rewrite|
+      source = File.read(VERSION_FILE).sub(/^\s*VERSION = .*\n/) { rewrite.call(it) }
+      File.write @path, source
 
-      _, status = stamp "1.2.3"
+      stderr, status = stamp "1.2.3"
 
       assert_not status.success?, "stamped #{source.inspect}"
-      assert_equal source, File.binread(@target)
+      assert_match "does not load as", stderr
+      assert_equal source, File.read(@path)
     end
   end
 
   private
 
   def stamp(version)
-    _, stderr, status = Open3.capture3(RbConfig.ruby, STAMP, version, @target)
+    _, stderr, status = Open3.capture3(RbConfig.ruby, SCRIPT, version, @path)
     [stderr, status]
   end
 
-  # In a fresh process without bundler, whose setup would load the real
-  # version.rb through the gemspec before the stamped copy.
+  # A child process without bundler, so this suite's own constant is never redefined.
   def loaded_version
-    stdout, status = Open3.capture2({"RUBYOPT" => nil}, RbConfig.ruby, "--disable-gems",
-      "-e", "load ARGV[0]; print CloudflareOrigin::VERSION", @target)
+    stdout, status = Open3.capture2({"RUBYOPT" => nil, "BUNDLE_GEMFILE" => nil}, RbConfig.ruby, "-e", "load ARGV[0]; print CloudflareOrigin::VERSION", @path)
     assert status.success?
     stdout
   end
