@@ -45,6 +45,22 @@ class StampVersionTest < ActiveSupport::TestCase
     assert_equal "module CloudflareOrigin\nend\n", File.read(@target)
   end
 
+  test "refuses a placeholder followed by a second VERSION assignment, leaving the file unchanged" do
+    placeholder = File.read(@target).chomp.delete_suffix("end")
+    [
+      %(#{placeholder}=begin\n  VERSION = "9.9.9".freeze\n=end\nend\n),
+      %(#{placeholder}  VERSION = "9.9.9".freeze\nend\n),
+      %(#{placeholder}  VERSION = VERSION + ".1"\nend\n)
+    ].each do |source|
+      File.binwrite @target, source
+
+      _, status = stamp "1.2.3"
+
+      assert_not status.success?, "stamped #{source.inspect}"
+      assert_equal source, File.binread(@target)
+    end
+  end
+
   private
 
   def stamp(version)
@@ -52,9 +68,11 @@ class StampVersionTest < ActiveSupport::TestCase
     [stderr, status]
   end
 
-  # In a subprocess, so this suite's own CloudflareOrigin::VERSION is never redefined.
+  # In a fresh process without bundler, whose setup would load the real
+  # version.rb through the gemspec before the stamped copy.
   def loaded_version
-    stdout, status = Open3.capture2(RbConfig.ruby, "-e", "load ARGV[0]; print CloudflareOrigin::VERSION", @target)
+    stdout, status = Open3.capture2({"RUBYOPT" => nil}, RbConfig.ruby, "--disable-gems",
+      "-e", "load ARGV[0]; print CloudflareOrigin::VERSION", @target)
     assert status.success?
     stdout
   end

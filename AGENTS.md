@@ -40,10 +40,12 @@ Minitest, run with `bundle exec rake test`. `Rack::MockRequest.env_for` sets no 
 
 ## Releasing
 
-The release tag is the only source of the version. `lib/cloudflare_origin/version.rb` holds the placeholder `0.0.0.dev`; never bump it by hand.
+The release tag is the only source of the version. `lib/cloudflare_origin/version.rb` holds the placeholder `0.0.1.dev`; never bump it by hand.
 
-1. On every push to `main`, `release-drafter.yml` updates a draft GitHub release, tagged one patch above the last release, with notes from the merged pull requests.
+1. On every push to `main`, `release-drafter.yml` updates a draft GitHub release with notes from the merged pull requests. Its version bumps the last published release, skipping prereleases: major if a merged pull request carries the `major` label, otherwise minor for `minor`, otherwise patch.
 2. Publish the draft. The `v<version>` tag push runs `release.yml`: it runs `ci.yml` on the tagged commit, then the `publish` job, in the `release` environment, stamps the version into `version.rb` with `bin/stamp-version`, builds the gem and pushes it through RubyGems trusted publishing.
+
+If the publish fails, never move or delete the release tag. Fix the cause on `main`, regenerate the next draft's notes, and publish that draft as the next version.
 
 The RubyGems trusted publisher must stay on workflow `release.yml` and environment `release`; a blank environment field accepts any environment. The shape of this workflow is owned by the gem release section of `docs/ci-standard.md` in 6temes/claude-plugins.
 
