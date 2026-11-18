@@ -16,6 +16,10 @@ class StampVersionTest < ActiveSupport::TestCase
 
   teardown { FileUtils.remove_entry @dir }
 
+  test "the unreleased placeholder satisfies the >= 0 requirement Bundler gives a git source" do
+    assert_operator Gem::Version.new(CloudflareOrigin::VERSION), :>=, Gem::Version.new("0")
+  end
+
   test "stamps the version into a copy of the real version.rb" do
     _, status = stamp "1.2.3"
 
@@ -48,8 +52,8 @@ class StampVersionTest < ActiveSupport::TestCase
   test "refuses a placeholder followed by a second VERSION assignment, leaving the file unchanged" do
     placeholder = File.read(@target).chomp.delete_suffix("end")
     [
-      %(#{placeholder}=begin\n  VERSION = "9.9.9".freeze\n=end\nend\n),
-      %(#{placeholder}  VERSION = "9.9.9".freeze\nend\n),
+      %(#{placeholder}=begin\n  VERSION = "9.9.9"\n=end\nend\n),
+      %(#{placeholder}  VERSION = "9.9.9" # release version\nend\n),
       %(#{placeholder}  VERSION = VERSION + ".1"\nend\n)
     ].each do |source|
       File.binwrite @target, source

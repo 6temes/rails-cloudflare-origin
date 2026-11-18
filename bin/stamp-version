@@ -4,7 +4,6 @@
 #   bin/stamp-version VERSION FILE
 
 require "open3"
-require "rbconfig"
 
 abort "usage: bin/stamp-version VERSION FILE" unless ARGV.size == 2
 version, path = ARGV
@@ -15,7 +14,7 @@ unless Gem::Version.correct?(version) && Gem::Version.new(version).to_s == versi
   abort "#{version.inspect} is not a plain gem version"
 end
 
-literal = /^(\s*VERSION = )"[^"]*"/
+literal = /^(\s*VERSION = )"[^"]*"$/
 source = File.read(path)
 abort "expected exactly one VERSION literal in #{path}" unless source.scan(literal).size == 1
 
@@ -24,18 +23,8 @@ File.write(path, source.sub(literal) { "#{$1}\"#{version}\"" })
 # The text match cannot see what Ruby does with the file: a later assignment,
 # a suffix appended to the literal, or a literal inside a block comment all
 # build a gem whose version differs from the tag. Loading it settles that.
-LOADED_VERSION = <<~'RUBY'
-  wrapper = Module.new
-  load ARGV[0], wrapper
-  find = ->(mod) do
-    next [mod.const_get(:VERSION, false)] if mod.const_defined?(:VERSION, false)
-    mod.constants(false).map { mod.const_get(it, false) }.grep(Module).flat_map(&find)
-  end
-  print find.(wrapper).join("\n")
-RUBY
-
-loaded, status = Open3.capture2({"RUBYOPT" => nil, "BUNDLE_GEMFILE" => nil},
-  RbConfig.ruby, "--disable-gems", "-W0", "-e", LOADED_VERSION, path)
+loaded, status = Open3.capture2({"RUBYOPT" => nil, "BUNDLE_GEMFILE" => nil}, RbConfig.ruby, "--disable-gems",
+  "-e", "load ARGV[0]; print CloudflareOrigin::VERSION", path, err: File::NULL)
 unless status.success? && loaded == version
   File.write(path, source)
   abort "#{path} loads VERSION as #{loaded.inspect}, not #{version.inspect}; restored it"
