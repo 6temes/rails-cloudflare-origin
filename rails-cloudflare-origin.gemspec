@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.homepage = "https://github.com/6temes/rails-cloudflare-origin"
   spec.license = "MIT"
 
-  spec.required_ruby_version = ">= 4.0"
+  spec.required_ruby_version = ">= 4.0.10"
 
   spec.metadata = {
     "bug_tracker_uri" => "#{spec.homepage}/issues",

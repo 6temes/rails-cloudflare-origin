@@ -54,7 +54,7 @@ When no current secret is present, the gem installs nothing. Outside `developmen
 
 ## Requirements
 
-Ruby 4.0 or newer and Rails 8.1 or newer. The gem targets the latest Ruby and Rails only, and these floors move up with each release.
+Ruby 4.0.10 or newer and Rails 8.1 or newer. The gem targets the latest Ruby and Rails only, and these floors move up with each release.
 
 ## Development
 
